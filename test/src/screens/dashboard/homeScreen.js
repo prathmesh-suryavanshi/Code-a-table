@@ -76,13 +76,7 @@ export default function homeScreen({ navigation }) {
           if (results.rowsAffected > 0) {
             alert(
               'Data Added successfully',
-              [
-                {
-                  text: 'Ok',
-                  onPress: () => that.props.navigation.navigate('HomeScreen'),
-                },
-              ],
-              { cancelable: false }
+             
             );
           } else {
             alert('oops something went wrong');
@@ -107,13 +101,6 @@ export default function homeScreen({ navigation }) {
           if (results.rowsAffected > 0) {
             alert(
               'Data deleted successfully',
-              [
-                {
-                  text: 'Ok',
-                  onPress: () => that.props.navigation.navigate('HomeScreen'),
-                },
-              ],
-              { cancelable: false }
             );
           } else {
             alert('No data present');
