@@ -4,19 +4,42 @@ Des: home screen
 */
 
 import React, { useEffect, useState } from 'react';
-import {  Text, View, ImageBackground, Image, ScrollView, ActivityIndicator } from 'react-native';
+import {  Text, View, ImageBackground, Image, ScrollView, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { FlatGrid } from 'react-native-super-grid';
 import Button from '../../shared/common_components/button'
 import useForceUpdate from 'use-force-update';
 import { Table, TableWrapper, Row, Cell } from 'react-native-table-component';
 import {styles} from '../../shared/CSS/globalCSS'
+import { openDatabase } from 'react-native-sqlite-storage';
+var db = openDatabase({ name: 'User_Database.db' },()=>{console.log("Success")}, ()=>{console.log("Error")});
+
 export default function homeScreen({ navigation }) {
+  useEffect(() => {
+    db.transaction(function (txn) {
+      txn.executeSql(
+        "SELECT name FROM sqlite_master WHERE type='table' AND name='User_Table'",
+        [],
+        function (tx, res) {
+          console.log('item:', res.rows.length);
+          if (res.rows.length == 0) {
+            txn.executeSql('DROP TABLE IF EXISTS User_Table', []);
+            txn.executeSql(
+              'CREATE TABLE IF NOT EXISTS User_Table(id INTEGER PRIMARY KEY AUTOINCREMENT, title VARCHAR(30), url VARCHAR(255), thumbnailUrl VARCHAR(255))',
+              []
+            );
+          }
+        }
+      );
+    })
+
+  }, []);
+  
   //State
   const [isLoading, setLoading] = useState(true);
   const [data, setData] = useState([]);
   const [tableData, setTableData] = useState([]);
   const [tableHead, setTableHead] = useState(['Album Id', 'Id', 'Image URL', 'Image', ''])
-  
+ 
   //Force Update to re-render
   const forceUpdate = useForceUpdate();
 
@@ -44,6 +67,29 @@ export default function homeScreen({ navigation }) {
     item.added = true;
     handleClick()
     setTableData(tableData => (tableData.concat(item)))
+    db.transaction(function (tx) {
+      tx.executeSql(
+        'INSERT INTO User_Table (id, title, url, thumbnailUrl) VALUES (?,?,?,?)',
+        [item.id, item.title, item.url, item.thumbnailUrl],
+        (tx, results) => {
+          console.log('Results', results.rowsAffected);
+          if (results.rowsAffected > 0) {
+            alert(
+              'Data Added successfully',
+              [
+                {
+                  text: 'Ok',
+                  onPress: () => that.props.navigation.navigate('HomeScreen'),
+                },
+              ],
+              { cancelable: false }
+            );
+          } else {
+            alert('oops something went wrong');
+          }
+        }
+      );
+    });
   }
 
   //Remove image to table
@@ -52,6 +98,29 @@ export default function homeScreen({ navigation }) {
     handleClick()
     const removeImage = item
     setTableData(tableData => (tableData.filter(item => item !== removeImage)))
+    db.transaction(tx => {
+      tx.executeSql(
+        'DELETE FROM User_Table where id='+ item.id,
+        [],
+        (tx, results) => {
+          console.log('Results', results.rowsAffected);
+          if (results.rowsAffected > 0) {
+            alert(
+              'Data deleted successfully',
+              [
+                {
+                  text: 'Ok',
+                  onPress: () => that.props.navigation.navigate('HomeScreen'),
+                },
+              ],
+              { cancelable: false }
+            );
+          } else {
+            alert('No data present');
+          }
+        }
+      );
+    });
   }
 
   //Show image in table
